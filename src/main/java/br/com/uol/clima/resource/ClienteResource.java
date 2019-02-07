@@ -1,6 +1,8 @@
 package br.com.uol.clima.resource;
 
+import java.net.Inet4Address;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +48,7 @@ public class ClienteResource {
 	
 	@RequestMapping(method = RequestMethod.POST)
 	public ResponseEntity<Void> add(@RequestBody Cliente cliente) {
+		cliente = this.repository.save(cliente);
 		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(cliente.getId()).toUri();
 		return ResponseEntity.created(uri).build();
 	}
@@ -67,4 +70,6 @@ public class ClienteResource {
 		}
 		return ResponseEntity.noContent().build();
 	}
+	
+	
 }
