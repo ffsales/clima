@@ -44,6 +44,7 @@ public class ClimaResource {
 		try {
 			String ip = Inet4Address.getLocalHost().getHostAddress();
 			RestTemplate restTemplate = new RestTemplate();
+			//JsonNode localizacao = restTemplate.getForObject("https://ipvigilante.com/" + ip + "/full", JsonNode.class);
 			JsonNode localizacao = restTemplate.getForObject("https://ipvigilante.com/8.8.8.8/full", JsonNode.class);
 			System.out.println(localizacao);
 			JsonNode data = localizacao.get("data");
