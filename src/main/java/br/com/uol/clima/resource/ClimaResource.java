@@ -34,6 +34,8 @@ public class ClimaResource {
 	@Autowired
 	private ClienteRepository clienteRepository;
 
+	private RestTemplate restTemplate = new RestTemplate();
+
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
 	public ResponseEntity<Void> getTemperatura(@PathVariable("id") Long id) {
 		
@@ -42,24 +44,13 @@ public class ClimaResource {
 		Double temp;
 		
 		try {
-			String ip = Inet4Address.getLocalHost().getHostAddress();
-			RestTemplate restTemplate = new RestTemplate();
-			//JsonNode localizacao = restTemplate.getForObject("https://ipvigilante.com/" + ip + "/full", JsonNode.class);
-			JsonNode localizacao = restTemplate.getForObject("https://ipvigilante.com/8.8.8.8/full", JsonNode.class);
-			System.out.println(localizacao);
+			String ip = getIp();
+			JsonNode localizacao = getLocalizacao(ip);
 			JsonNode data = localizacao.get("data");
 			lat = data.get("latitude").asLong();
 			lon = data.get("longitude").asLong();
-			
-			JsonNode mapaweather = restTemplate.getForObject("https://www.metaweather.com/api/location/search/?lattlong=" + lat + "," + lon, JsonNode.class);
-			System.out.println(mapaweather.get(0).get("woeid"));
-			Long woeid = mapaweather.get(0).get("woeid").asLong();
-			
-			JsonNode clima = restTemplate.getForObject("https://www.metaweather.com/api/location/" + woeid, JsonNode.class);
-			JsonNode consolidatedWeather = clima.get("consolidated_weather");
-			temp = consolidatedWeather.get(0).get("the_temp").asDouble();
-			System.out.println(clima);
-			System.out.println(consolidatedWeather.get(0).get("the_temp"));
+			Long woeid = getWoeid(lat, lon);
+			temp = getTemp(woeid); 
 			
 		} catch(HttpClientErrorException e) {
 			return ResponseEntity.badRequest().build();
@@ -80,10 +71,32 @@ public class ClimaResource {
 		
 		return ResponseEntity.noContent().build();
 	}
-	
+
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<List<Clima>> findAll() {
 		List<Clima> climas = climaRepository.findAll();
 		return ResponseEntity.status(HttpStatus.OK).body(climas);
 	}
+
+	private Double getTemp(Long woeid) {
+		JsonNode clima = restTemplate.getForObject("https://www.metaweather.com/api/location/" + woeid, JsonNode.class);
+		JsonNode consolidatedWeather = clima.get("consolidated_weather");
+		return consolidatedWeather.get(0).get("the_temp").asDouble();
+	}
+
+	private Long getWoeid(Long lat, Long lon) {
+		JsonNode mapaweather = restTemplate.getForObject("https://www.metaweather.com/api/location/search/?lattlong=" + lat + "," + lon, JsonNode.class);
+		Long woeid = mapaweather.get(0).get("woeid").asLong();
+		return woeid;
+	}
+
+	private JsonNode getLocalizacao(String ip) {
+		//return restTemplate.getForObject("https://ipvigilante.com/" + ip + "/full", JsonNode.class);
+		return restTemplate.getForObject("https://ipvigilante.com/8.8.8.8/full", JsonNode.class);
+	}
+
+	private String getIp() throws UnknownHostException {
+		return Inet4Address.getLocalHost().getHostAddress();
+	}
+	
 }
